@@ -1,17 +1,17 @@
-name: Sample Python GitHub
+name: "mpatel-sample-python-github"
 on: workflow_dispatch
 
 permissions:
   actions: read # for detecting the Github Actions environment.
   id-token: write # for creating OIDC tokens for signing.
   packages: write # for uploading attestations.
-  contents: read #Ability to read the contents permission
-  security-events: write # Required for uploading code scanning 
+  contents: read
+  security-events: write # Required for uploading code scanning.
 jobs:
     build-publish-python:
         runs-on: ubuntu-latest
         env:
-          DOCKER_REPO: 'docker-prod-local'
+          DOCKER_REPO: 'alpha-docker-virtual'
           IMAGE_NAME: 'python-test-image-gh'
         outputs:
           image: ${{ vars.JF_URL }}/${{ env.DOCKER_REPO }}/${{ env.IMAGE_NAME }}
@@ -27,7 +27,7 @@ jobs:
                 # Required for uploading code scanning.
                 JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                  oidc-provider-name: jfrog-github-oidc
+                  oidc-provider-name: mpatel-jfrog-githuboidc
                   version: latest
                   
             - name: Checkout the repository    
@@ -36,7 +36,7 @@ jobs:
            
             - name: configure jfrog environment
               run: |
-                jf pip-config --repo-resolve=python-virtual    
+                jf pip-config --repo-resolve=alpha-pypi-virtual    
                 
             - name: configure environment
               run: |                      
@@ -53,7 +53,7 @@ jobs:
 
             - name: publish python package
               run: |
-                jf rt u dist/ python-virtual/example-projects/ --module=jfrog-python-example
+                jf rt u dist/ alpha-pypi-virtual/example-projects/ --module=jfrog-python-example
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3    
@@ -94,13 +94,3 @@ jobs:
               run: |            
                 jf build-scan --fail=false
             
-    provenance:
-      needs: [build-publish-python]
-      uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v1.10.0
-      with:
-        image:  ${{ needs.build-publish-python.outputs.image }}
-        digest: ${{ needs.build-publish-python.outputs.digest }}
-        private-repository: true
-      secrets:
-        registry-username: ${{ vars.JF_USER }}
-        registry-password: ${{ secrets.JF_ACCESS_TOKEN }}
